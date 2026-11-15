@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Planet X - Moving Object Tracker</title>
+
+    <style>
+        body {
+            background: #080d20;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #55d6ff;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: auto;
+            background: #151d38;
+            padding: 25px;
+            border-radius: 15px;
+        }
+
+        input {
+            width: 100px;
+            padding: 10px;
+            margin: 8px;
+            border-radius: 5px;
+            border: none;
+        }
+
+        button {
+            background: #00aaff;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 7px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #0066cc;
+        }
+
+        canvas {
+            display: block;
+            margin: 20px auto;
+            width: 100%;
+            max-width: 600px;
+            background: #020617;
+            border: 2px solid #55d6ff;
+            border-radius: 10px;
+        }
+
+        #result {
+            color: #55ffbb;
+            font-size: 17px;
+            margin-top: 15px;
+        }
+
+        label {
+            display: inline-block;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>🚀 Planet X - Moving Object Tracker</h1>
+
+        <p>
+            Compare two astronomical observations
+            to visualize possible object movement.
+        </p>
+
+        <h3>Old Position (%)</h3>
+
+        <label>X Coordinate:</label>
+        <input type="number" id="oldX" value="20" min="0" max="100">
+
+        <label>Y Coordinate:</label>
+        <input type="number" id="oldY" value="30" min="0" max="100">
+
+        <h3>New Position (%)</h3>
+
+        <label>X Coordinate:</label>
+        <input type="number" id="newX" value="70" min="0" max="100">
+
+        <label>Y Coordinate:</label>
+        <input type="number" id="newY" value="60" min="0" max="100">
+
+        <br>
+
+        <button onclick="animateObject()">
+            Show Object Movement
+        </button>
+
+        <button onclick="resetCanvas()">
+            Reset
+        </button>
+
+        <canvas id="motionCanvas" width="600" height="400"></canvas>
+
+        <div id="result">
+            Enter coordinates and click Show Object Movement.
+        </div>
+
+    </div>
+
+    <script>
+
+        const canvas = document.getElementById("motionCanvas");
+        const ctx = canvas.getContext("2d");
+
+        let animationId;
+
+        // Draw background stars
+
+        function drawBackground() {
+
+            ctx.fillStyle = "#020617";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < 100; i++) {
+
+                let x = (i * 97) % canvas.width;
+                let y = (i * 53) % canvas.height;
+
+                ctx.fillStyle = "white";
+                ctx.fillRect(x, y, 2, 2);
+            }
+
+            // Grid lines
+
+            ctx.strokeStyle = "#243453";
+            ctx.lineWidth = 1;
+
+            for (let x = 0; x <= 600; x += 60) {
+
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, 400);
+                ctx.stroke();
+
+            }
+
+            for (let y = 0; y <= 400; y += 40) {
+
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(600, y);
+                ctx.stroke();
+
+            }
+
+        }
+
+        // Draw object
+
+        function drawObject(x, y, color, label) {
+
+            ctx.beginPath();
+
+            ctx.arc(x, y, 8, 0, Math.PI * 2);
+
+            ctx.fillStyle = color;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 15;
+
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = "white";
+            ctx.font = "14px Arial";
+
+            ctx.fillText(label, x + 12, y - 12);
+
+        }
+
+        // Animate movement
+
+        function animateObject() {
+
+            cancelAnimationFrame(animationId);
+
+            const oldX = Number(document.getElementById("oldX").value);
+            const oldY = Number(document.getElementById("oldY").value);
+
+            const newX = Number(document.getElementById("newX").value);
+            const newY = Number(document.getElementById("newY").value);
+
+            const values = [oldX, oldY, newX, newY];
+
+            if (!values.every(v => Number.isFinite(v) && v >= 0 && v <= 100)) {
+
+                document.getElementById("result").innerText =
+                    "Please enter coordinates between 0 and 100.";
+
+                return;
+
+            }
+
+            // Convert percentages into canvas coordinates
+
+            const x1 = oldX / 100 * canvas.width;
+            const y1 = oldY / 100 * canvas.height;
+
+            const x2 = newX / 100 * canvas.width;
+            const y2 = newY / 100 * canvas.height;
+
+            // Calculate movement
+
+            const dx = newX - oldX;
+            const dy = newY - oldY;
+
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            document.getElementById("result").innerHTML =
+                "Movement Distance: " + distance.toFixed(2) +
+                "%<br>Direction: X = " + dx.toFixed(2) +
+                ", Y = " + dy.toFixed(2);
+
+            let progress = 0;
+
+            function draw() {
+
+                drawBackground();
+
+                // Draw movement path
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+
+                ctx.strokeStyle = "yellow";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw old position
+
+                drawObject(x1, y1, "#00aaff", "Old Position");
+
+                // Calculate current position
+
+                const currentX = x1 + (x2 - x1) * progress;
+                const currentY = y1 + (y2 - y1) * progress;
+
+                // Draw moving object
+
+                drawObject(currentX, currentY, "#ff4444", "Object");
+
+                // Draw new position
+
+                if (progress >= 1) {
+
+                    drawObject(x2, y2, "#00ff88", "New Position");
+
+                    document.getElementById("result").innerHTML +=
+                        "<br>Movement animation completed!";
+
+                    return;
+
+                }
+
+                progress += 0.005;
+
+                animationId = requestAnimationFrame(draw);
+
+            }
+
+            draw();
+
+        }
+
+        // Reset
+
+        function resetCanvas() {
+
+            cancelAnimationFrame(animationId);
+
+            drawBackground();
+
+            document.getElementById("result").innerText =
+                "Canvas reset. Enter new coordinates.";
+
+        }
+
+        // Initial background
+
+        drawBackground();
+
+    </script>
+
+</body>
+
+</html>
